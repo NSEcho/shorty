@@ -15,51 +15,6 @@ type Config struct {
 	hashFn  func(string) string
 }
 
-type ConfigOption func(*Config)
-
-func NewConfig(opts ...func(*Config)) *Config {
-	cfg := Config{}
-	for _, opt := range opts {
-		opt(&cfg)
-	}
-	return &cfg
-}
-
-func InitDatabase() (*Config, error) {
-	cfg := NewConfig(
-		WithBucketName("links.db"),
-		WithTimeout(2),
-		WithHashedFunc(getHashed))
-	var err error
-	cfg.Db, err = bolt.Open(string(cfg.Bucket), 0600, &bolt.Options{Timeout: time.Duration(cfg.Timeout) * time.Second})
-	if err != nil {
-		return nil, err
-	}
-
-	return cfg, cfg.Db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists(cfg.Bucket)
-		return err
-	})
-}
-
-func WithTimeout(timeout int) ConfigOption {
-	return func(cfg *Config) {
-		cfg.Timeout = timeout
-	}
-}
-
-func WithBucketName(name string) ConfigOption {
-	return func(cfg *Config) {
-		cfg.Bucket = []byte(name)
-	}
-}
-
-func WithHashedFunc(hashFn func(string) string) ConfigOption {
-	return func(cfg *Config) {
-		cfg.hashFn = hashFn
-	}
-}
-
 func (cfg *Config) SaveLink(url string) (string, error) {
 	var shorted string
 	err := cfg.Db.Update(func(tx *bolt.Tx) error {
@@ -87,6 +42,64 @@ func (cfg *Config) GetShorted(shortStr string) (string, error) {
 	})
 
 	return url, err
+}
+
+type ConfigOption func(*Config)
+
+func NewConfig(opts ...ConfigOption) *Config {
+	cfg := Config{
+		Bucket:  []byte("links.db"),
+		Timeout: 1,
+		Db:      nil,
+		hashFn:  getHashed,
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	return &cfg
+}
+
+/*
+InitDatabase will initialize database with functional parameters passed to the function.
+Functional parameters need to be in format like below
+
+func example(bucketName string) ConfigOption {
+	return func(cfg *Config) {
+		cfg.Bucket = []byte(bucketName)
+	}
+}
+
+*/
+func InitDatabase(opts ...ConfigOption) (*Config, error) {
+	cfg := NewConfig(opts...)
+	var err error
+	cfg.Db, err = bolt.Open(string(cfg.Bucket), 0600, &bolt.Options{Timeout: time.Duration(cfg.Timeout) * time.Second})
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg, cfg.Db.Update(func(tx *bolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists(cfg.Bucket)
+		return err
+	})
+}
+
+func withTimeout(timeout int) ConfigOption {
+	return func(cfg *Config) {
+		cfg.Timeout = timeout
+	}
+}
+
+func withBucketName(name string) ConfigOption {
+	return func(cfg *Config) {
+		cfg.Bucket = []byte(name)
+	}
+}
+
+func withHashedFunc(hashFn func(string) string) ConfigOption {
+	return func(cfg *Config) {
+		cfg.hashFn = hashFn
+	}
 }
 
 func getHashed(url string) string {
