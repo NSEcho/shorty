@@ -84,24 +84,6 @@ func InitDatabase(opts ...ConfigOption) (*Config, error) {
 	})
 }
 
-func withTimeout(timeout int) ConfigOption {
-	return func(cfg *Config) {
-		cfg.Timeout = timeout
-	}
-}
-
-func withBucketName(name string) ConfigOption {
-	return func(cfg *Config) {
-		cfg.Bucket = []byte(name)
-	}
-}
-
-func withHashedFunc(hashFn func(string) string) ConfigOption {
-	return func(cfg *Config) {
-		cfg.hashFn = hashFn
-	}
-}
-
 func getHashed(url string) string {
 	byteURL := []byte(url)
 	hash := fmt.Sprintf("%x", sha1.Sum(byteURL))
