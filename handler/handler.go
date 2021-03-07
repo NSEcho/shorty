@@ -21,6 +21,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.H(h.Env, w, r)
 }
 
+/* IndexPath will redirect user to shorted link or return http.StatusNotFound */
 func IndexPath(env *Env, w http.ResponseWriter, r *http.Request) {
 	shorted := strings.TrimLeft(r.URL.Path, "/")
 	url := env.DB.GetShorted(shorted)
@@ -31,16 +32,9 @@ func IndexPath(env *Env, w http.ResponseWriter, r *http.Request) {
 	} else {
 		http.Redirect(w, r, url, http.StatusSeeOther)
 	}
-
-	/*
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprintln(w, "URL is not shorted")
-		} else {
-
-		}*/
 }
 
+/* ShortyPath will create shorted link */
 func ShortyPath(env *Env, w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		fmt.Fprintln(w, "Error fetching form data")
@@ -53,7 +47,8 @@ func ShortyPath(env *Env, w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Something went wrong")
 	}
 
-	/* TODO: Do not hardcode link */
-	link := "https://localhost:8080/" + shorted
+	host := r.Host
+	link := "http://" + host + "/" + shorted
+
 	fmt.Fprintln(w, link)
 }
