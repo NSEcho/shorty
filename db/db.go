@@ -20,28 +20,21 @@ func (cfg *Config) SaveLink(url string) (string, error) {
 	err := cfg.Db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket(cfg.Bucket)
 		shorted = cfg.hashFn(url)
-		return b.Put([]byte(url), []byte(shorted))
+		return b.Put([]byte(shorted), []byte(url))
 	})
 
 	return shorted, err
 }
 
-func (cfg *Config) GetShorted(shortStr string) (string, error) {
+func (cfg *Config) GetShorted(shortStr string) string {
 	var url string
-	err := cfg.Db.View(func(tx *bolt.Tx) error {
+	_ = cfg.Db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(cfg.Bucket)
-		c := b.Cursor()
-
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if string(v) == shortStr {
-				url = string(k)
-				return nil
-			}
-		}
-		return fmt.Errorf("")
+		url = string(b.Get([]byte(shortStr)))
+		return nil
 	})
 
-	return url, err
+	return url
 }
 
 type ConfigOption func(*Config)

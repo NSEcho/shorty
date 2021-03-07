@@ -23,13 +23,22 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func IndexPath(env *Env, w http.ResponseWriter, r *http.Request) {
 	shorted := strings.TrimLeft(r.URL.Path, "/")
-	url, err := env.DB.GetShorted(shorted)
-	if err != nil {
+	url := env.DB.GetShorted(shorted)
+
+	if url == "" {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintln(w, "URL is not shorted")
 	} else {
 		http.Redirect(w, r, url, http.StatusSeeOther)
 	}
+
+	/*
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprintln(w, "URL is not shorted")
+		} else {
+
+		}*/
 }
 
 func ShortyPath(env *Env, w http.ResponseWriter, r *http.Request) {
