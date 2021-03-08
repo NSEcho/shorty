@@ -9,7 +9,8 @@ import (
 )
 
 type Env struct {
-	DB *db.Config
+	DB     *db.Config
+	Scheme string
 }
 
 type Handler struct {
@@ -41,6 +42,11 @@ func ShortyPath(env *Env, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	url := r.FormValue("url")
+	if url == "" {
+		fmt.Fprintln(w, "You need to pass url value")
+		return
+	}
+
 	shorted, err := env.DB.SaveLink(url)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -48,7 +54,7 @@ func ShortyPath(env *Env, w http.ResponseWriter, r *http.Request) {
 	}
 
 	host := r.Host
-	link := "http://" + host + "/" + shorted
+	link := env.Scheme + host + "/" + shorted
 
 	fmt.Fprintln(w, link)
 }

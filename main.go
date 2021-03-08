@@ -15,6 +15,8 @@ func main() {
 	port := flag.Int("port", 8080, "port number to bind web server to")
 	dbName := flag.String("db", "links.db", "the name of the database")
 	timeout := flag.Int("timeout", 1, "timeout for database")
+	fullchain := flag.String("fchain", "", "path to fullchain.pem")
+	privkey := flag.String("priv", "", "path to privkey.pem")
 	flag.Parse()
 
 	// Create functional options
@@ -34,11 +36,21 @@ func main() {
 		DB: database,
 	}
 
+	if *fullchain != "" && *privkey != "" {
+		env.Scheme = "https://"
+	} else {
+		env.Scheme = "http://"
+	}
+
 	http.Handle("/", handler.Handler{env, handler.IndexPath})
 	http.Handle("/shorty", handler.Handler{env, handler.ShortyPath})
 
 	fmt.Printf("[*] Starting the server on port %d\n", *port)
-	http.ListenAndServe(addr, nil)
+	if env.Scheme == "https://" {
+		http.ListenAndServeTLS(addr, *fullchain, *privkey, nil)
+	} else {
+		http.ListenAndServe(addr, nil)
+	}
 }
 
 func withBucketName(bucketName string) db.ConfigOption {
